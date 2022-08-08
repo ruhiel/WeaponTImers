@@ -136,6 +136,7 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=0,
                         name='Power Sheathe',
+                        jpname='強化納刀',
                         field='MoveWpOffBuffGreatSwordTimer'
                         }
                     },
@@ -145,11 +146,13 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=0,
                         name='Switch Charger',
+                        jpname='スラッシュチャージャー',
                         field='_NoUseSlashGaugeTimer'
                         },
                     [2]={
                         skill_type='weapon',
                         name='Amp State',
+                        jpname='高出力状態',
                         field='_BottleAwakeDurationTimer'
                         }
                     },
@@ -159,11 +162,13 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=1,
                         name='Harvest Moon',
+                        jpname='円月',
                         field='_lifeTimer'
                         },
                     [2]={
                         skill_type='weapon',
                         name='Spirit Gauge Lv',
+                        jpname='練気ゲージLv',
                         field='_LongSwordGaugeLvTimer'
                         },
                     },
@@ -173,6 +178,7 @@ local weapon_skill_fields = {
                         type='C',
                         equipped_val=1,
                         name='Fanning Maneuver',
+                        jpname='扇回移動',
                         field='LightBowgunWireBuffTimer'
                         }
                     },
@@ -182,6 +188,7 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=1,
                         name='Setting Sun',
+                        jpname='鉄蟲円糸【鈍】',
                         field='_Timer'
                         },
                     [2]={
@@ -189,6 +196,7 @@ local weapon_skill_fields = {
                         type='E',
                         equipped_val=1,
                         name='Rising Moon',
+                        jpname='鉄蟲円糸【迅】',
                         field='_Timer'
                         },
                     },
@@ -198,6 +206,7 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=1,
                     name='Impact Burst',
+                    jpname='インパクトバースト',
                     field='_ImpactPullsTimer'
                     }
                 },
@@ -207,6 +216,7 @@ local weapon_skill_fields = {
                         type='B',
                         equipped_val=1,
                         name='Ground Splitter',
+                        jpname='地裂斬',
                         field='_ShotDamageUpDurationTimer'
                         }
                     },
@@ -216,6 +226,7 @@ local weapon_skill_fields = {
                     type='A',
                     equipped_val=0,
                     name='Anchor Rage',
+                    jpname='アンカーレイジ',
                     field='_GuardRageTimer'
                 },
                 [2]={
@@ -223,6 +234,7 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=0,
                     name='Twin Vine',
+                    jpname='デュエルヴァイン',
                     field='_lifeTimer'
                     }
                 },
@@ -232,6 +244,7 @@ local weapon_skill_fields = {
                         type='E',
                         equipped_val=1,
                         name='Destroyer Oil',
+                        jpname='重撃の刃薬',
                         field='_OilBuffTimer'
                         }
                     },
@@ -241,6 +254,7 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=1,
                         name='Ironshine Silk',
+                        jpname='鉄蟲研糸',
                         field='SharpnessRecoveryBuffValidTimer'
                         }
                     },
@@ -250,6 +264,7 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=1,
                     name='Silkbind Shockwave',
+                    jpname='鉄蟲糸響打',
                     field='_ImpactPullsTimer'
                     },
                 [2]={
@@ -257,6 +272,7 @@ local weapon_skill_fields = {
                     type='C',
                     equipped_val=1,
                     name='Bead of Resonance',
+                    jpname='共鳴音珠',
                     field='_lifeTimer'
                     },
                 [3]={
@@ -264,6 +280,7 @@ local weapon_skill_fields = {
                     type='E',
                     equipped_val=1,
                     name='Sonic Bloom',
+                    jpname='炸裂音珠',
                     field='_lifeTimer'
                     }
                 },
@@ -271,6 +288,7 @@ local weapon_skill_fields = {
                     [1]={
                         skill_type='weapon',
                         name='Shield Charge',
+                        jpname='属性強化',
                         field='_ShieldBuffTimer'
                         },
                     [2]={
@@ -278,6 +296,7 @@ local weapon_skill_fields = {
                         type='A',
                         equipped_val=0,
                         name='Sword Charge',
+                        jpname='剣属性強化',
                         field='_SwordBuffTimer'
                         },
                     },
@@ -285,21 +304,25 @@ local weapon_skill_fields = {
                     [1]={
                         skill_type='weapon',
                         name='RWO',
+                        jpname='トリプルアップ',
                         field='_RedExtractiveTime'
                         },
                     [2]={
                         skill_type='weapon',
                         name='Red',
+                        jpname='赤エキス',
                         field='_RedExtractiveTime'
                         },
                     [3]={
                         skill_type='weapon',
                         name='White',
+                        jpname='白エキス',
                         field='_WhiteExtractiveTime'
                         },
                     [4]={
                         skill_type='weapon',
                         name='Orange',
+                        jpname='橙エキス',
                         field='_OrangeExtractiveTime'
                         },
                     },
@@ -309,6 +332,7 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=0,
                     name='Herculean Draw',
+                    jpname='剛力の弓がけ',
                     field='_WireBuffAttackUpTimer'
                     },
                 [2]={
@@ -316,6 +340,7 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=1,
                     name='Bolt Boost',
+                    jpname='矢強化',
                     field='_WireBuffArrowUpTimer'
                     },
                 }
@@ -395,7 +420,7 @@ local function reload_player_weapon(args)
 end
 
 local function post_message(skill)
-    get_chatman():call("reqAddChatInfomation",'The skill <COL YEL>' .. skill .. '</COL>\nhas expired.',2289944406)
+    get_chatman():call("reqAddChatInfomation",'スキル <COL YEL>' .. skill .. '</COL>\nの効果が解除されました',2289944406)
 end
 
 local function split(inputstr, sep)
@@ -645,7 +670,7 @@ local function pulse(color1,color2,id)
     return ARBGintfromRGBA(math.floor(r),math.floor(g),math.floor(b),a)
 end
 
-local function create_timer(timer,timer_name,timer_count,id,timer_max_len,hide)
+local function create_timer(timer,timer_name,timer_count,id,timer_max_len,hide,jpname)
     if timer == 0 or timer < 0 then
 
         if expired_skill_frame_count[id] and expired_skill_frame_count[id] < max_frame_count then expired_skill_frame_count[id] = expired_skill_frame_count[id] + 1 end
@@ -653,7 +678,7 @@ local function create_timer(timer,timer_name,timer_count,id,timer_max_len,hide)
         if expired_skill_frame_count[id] == max_frame_count or not expired_skill_frame_count[id] then
             if settings.show_notif then
                 if notification[id] then
-                    post_message(timer_name)
+                    post_message(jpname)
                     notification[id] = false
                 end
             else
@@ -862,7 +887,7 @@ local function create_timer(timer,timer_name,timer_count,id,timer_max_len,hide)
             name_y = bg_y + bg_h / 2 - name_h / 2
         end
 
-        d2d.text(name_font,timer_name,name_x,name_y, name_font_color)
+        d2d.text(name_font,jpname,name_x,name_y, name_font_color)
     end
 end
 
@@ -890,6 +915,7 @@ re.on_frame(
                 if weapon_skill_fields[weapon_name] then
                     for i,ws in ipairs(weapon_skill_fields[weapon_name]) do
                         local skill_name = ws['name']
+                        local jp_skill_name = ws['jpname']
                         local hide = false
 
                         if not settings[skill_name] then
@@ -969,7 +995,7 @@ re.on_frame(
 
                             end
 
-                            table.insert(timers,{timer=t,name=skill_name,id=i,hide=hide})
+                            table.insert(timers,{timer=t,name=skill_name,id=i,hide=hide,jpname=jp_skill_name})
 
 
 
@@ -1016,7 +1042,7 @@ d2d.register(
             for i,timer in pairs(timers) do
                 local timer_count = i-1-hide_count
                 if timer_count < 0 then timer_count = 0 end
-                create_timer(timer['timer'],timer['name'],timer_count,timer['id'],timer_max_len,timer['hide'])
+                create_timer(timer['timer'],timer['name'],timer_count,timer['id'],timer_max_len,timer['hide'],timer['jpname'])
             end
         end
     end
