@@ -5,6 +5,7 @@ local hornshellman = nil
 local vilman = nil
 local questman = nil
 local chatman = nil
+local guiman = nil
 
 local timer_font_color = nil
 local border_color = nil
@@ -14,6 +15,7 @@ local bg_h,bg_w = nil
 local bg_x,bg_y = nil
 local name_font_color = nil
 local prog_bar_color = nil
+local hide_all_timers = false
 local background_offset = 6
 
 local weapon = nil
@@ -22,15 +24,19 @@ local master_player = nil
 local reload_wirebug_skills = false
 local reload_weapon = false
 local wire_skills = nil
+local prev_quest_status = nil
+local quest_status = nil
 
 local timer_count = 0
 local max_frame_count = 3
 
 local rising_moon = nil
 local setting_sun = nil
+local wyverheart_loaded_flag = false
 local prev_twin_vine_t = 0
 local prev_rising_moon_time = 0
 local prev_setting_sun_time = 0
+local prev_wb = 0
 
 local settings = {
                 enabled=true,
@@ -41,6 +47,7 @@ local settings = {
                 pulse_interval=30,
                 show_minutes=true,
                 hide_when_expired=false,
+                hide_when_quest_hidden=true,
                 pulse_below=10,
                 stack_direction=2,
                 bg_color=2248146944,
@@ -95,6 +102,9 @@ local settings = {
                 ['Red']=true,
                 ['White']=true,
                 ['Orange']=true,
+                ["Wyvern's Fire"]=true,
+                ["Wyvernblast"]=true,
+                ["Special Ammo"]=true,
                 }
 
 local pulse_direction = {}
@@ -104,7 +114,8 @@ local timers = {}
 local prog_bars_time_start = {}
 local notification = {}
 local expired_skill_frame_count = {}
-local ig_buff_flag = {Red=0,White=0,Orange=0}
+local ignore_frame_count = {["Wyvernblast 1"]=true,["Wyvernblast 2"]=true,["Wyvernblast 3"]=true}
+local ig_buff_flag = {Red=false,White=false,Orange=false}
 local wire_skills_type_ids = {
                 [1]='A',
                 [2]='B',
@@ -136,7 +147,8 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=0,
                         name='Power Sheathe',
-                        field='MoveWpOffBuffGreatSwordTimer'
+                        field='MoveWpOffBuffGreatSwordTimer',
+                        field_type='weapon'
                         }
                     },
             SlashAxe={
@@ -145,12 +157,14 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=0,
                         name='Switch Charger',
-                        field='_NoUseSlashGaugeTimer'
+                        field='_NoUseSlashGaugeTimer',
+                        field_type='weapon'
                         },
                     [2]={
                         skill_type='weapon',
                         name='Amp State',
-                        field='_BottleAwakeDurationTimer'
+                        field='_BottleAwakeDurationTimer',
+                        field_type='weapon'
                         }
                     },
             LongSword={
@@ -159,12 +173,14 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=1,
                         name='Harvest Moon',
-                        field='_lifeTimer'
+                        field='_lifeTimer',
+                        field_type='shell'
                         },
                     [2]={
                         skill_type='weapon',
                         name='Spirit Gauge Lv',
-                        field='_LongSwordGaugeLvTimer'
+                        field='_LongSwordGaugeLvTimer',
+                        field_type='weapon'
                         },
                     },
             LightBowgun={
@@ -173,7 +189,12 @@ local weapon_skill_fields = {
                         type='C',
                         equipped_val=1,
                         name='Fanning Maneuver',
-                        field='LightBowgunWireBuffTimer'
+                        field='LightBowgunWireBuffTimer',
+                        field_type='weapon'
+                        },
+                    [2]={
+                        skill_type='cooldown',
+                        name="Wyvernblast",
                         }
                     },
             HeavyBowgun={
@@ -182,15 +203,21 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=1,
                         name='Setting Sun',
-                        field='_Timer'
+                        field='_Timer',
+                        field_type='shell'
                         },
                     [2]={
                         skill_type='wirebug',
                         type='E',
                         equipped_val=1,
                         name='Rising Moon',
-                        field='_Timer'
+                        field='_Timer',
+                        field_type='shell'
                         },
+                    [3]={
+                        skill_type='cooldown',
+                        name="Special Ammo",
+                        }
                     },
             Hammer={
                 [1]={
@@ -198,7 +225,8 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=1,
                     name='Impact Burst',
-                    field='_ImpactPullsTimer'
+                    field='_ImpactPullsTimer',
+                    field_type='weapon'
                     }
                 },
             GunLance={
@@ -207,7 +235,12 @@ local weapon_skill_fields = {
                         type='B',
                         equipped_val=1,
                         name='Ground Splitter',
-                        field='_ShotDamageUpDurationTimer'
+                        field='_ShotDamageUpDurationTimer',
+                        field_type='weapon'
+                        },
+                    [2]={
+                        skill_type='cooldown',
+                        name="Wyvern's Fire",
                         }
                     },
             Lance={
@@ -216,14 +249,16 @@ local weapon_skill_fields = {
                     type='A',
                     equipped_val=0,
                     name='Anchor Rage',
-                    field='_GuardRageTimer'
+                    field='_GuardRageTimer',
+                    field_type='weapon'
                 },
                 [2]={
                     skill_type='wirebug',
                     type='F',
                     equipped_val=0,
                     name='Twin Vine',
-                    field='_lifeTimer'
+                    field='_lifeTimer',
+                    field_type='shell'
                     }
                 },
             ShortSword={
@@ -232,7 +267,8 @@ local weapon_skill_fields = {
                         type='E',
                         equipped_val=1,
                         name='Destroyer Oil',
-                        field='_OilBuffTimer'
+                        field='_OilBuffTimer',
+                        field_type='weapon'
                         }
                     },
             DualBlades={
@@ -241,7 +277,8 @@ local weapon_skill_fields = {
                         type='F',
                         equipped_val=1,
                         name='Ironshine Silk',
-                        field='SharpnessRecoveryBuffValidTimer'
+                        field='SharpnessRecoveryBuffValidTimer',
+                        field_type='weapon'
                         }
                     },
             Horn={
@@ -250,57 +287,66 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=1,
                     name='Silkbind Shockwave',
-                    field='_ImpactPullsTimer'
+                    field='_ImpactPullsTimer',
+                    field_type='weapon'
                     },
                 [2]={
                     skill_type='wirebug',
                     type='C',
                     equipped_val=1,
                     name='Bead of Resonance',
-                    field='_lifeTimer'
+                    field='_lifeTimer',
+                    field_type='shell'
                     },
                 [3]={
                     skill_type='wirebug',
                     type='E',
                     equipped_val=1,
                     name='Sonic Bloom',
-                    field='_lifeTimer'
+                    field='_lifeTimer',
+                    field_type='shell'
                     }
                 },
             ChargeAxe={
                     [1]={
                         skill_type='weapon',
                         name='Shield Charge',
-                        field='_ShieldBuffTimer'
+                        field='_ShieldBuffTimer',
+                        field_type='weapon'
                         },
                     [2]={
                         skill_type='wirebug',
                         type='A',
                         equipped_val=0,
                         name='Sword Charge',
-                        field='_SwordBuffTimer'
+                        field='_SwordBuffTimer',
+                        field_type='weapon'
                         },
                     },
             InsectGlaive={
                     [1]={
                         skill_type='weapon',
                         name='RWO',
-                        field='_RedExtractiveTime'
+                        field='_RedExtractiveTime',
+                        field_type='weapon'
                         },
                     [2]={
                         skill_type='weapon',
                         name='Red',
-                        field='_RedExtractiveTime'
+                        field='_RedExtractiveTime',
+                        field_type='weapon'
                         },
                     [3]={
                         skill_type='weapon',
                         name='White',
-                        field='_WhiteExtractiveTime'
+                        field='_WhiteExtractiveTime',
+                        field_type='weapon'
                         },
                     [4]={
                         skill_type='weapon',
                         name='Orange',
-                        field='_OrangeExtractiveTime'
+                        field='_OrangeExtractiveTime',
+                        field_type='weapon'
                         },
                     },
             Bow={
@@ -309,21 +355,22 @@ local weapon_skill_fields = {
                     type='F',
                     equipped_val=0,
                     name='Herculean Draw',
-                    field='_WireBuffAttackUpTimer'
+                    field='_WireBuffAttackUpTimer',
+                    field_type='weapon'
                     },
                 [2]={
                     skill_type='wirebug',
                     type='F',
                     equipped_val=1,
                     name='Bolt Boost',
-                    field='_WireBuffArrowUpTimer'
+                    field='_WireBuffArrowUpTimer',
+                    field_type='weapon'
                     },
                 }
             }
 
 local function load_settings()
     local l_settings = json.load_file('WeaponTimers_settings.json')
-    if not l_settings then l_settings = json.load_file('WirebugTimers_settings.json') end
     if l_settings then
         settings = l_settings
     end
@@ -332,6 +379,13 @@ end
 
 load_settings()
 
+
+local function get_guiman()
+    if not guiman then
+        guiman = sdk.get_managed_singleton('snow.gui.GuiManager')
+    end
+    return guiman
+end
 
 local function get_playman()
     if not playman then
@@ -394,8 +448,15 @@ local function reload_player_weapon(args)
     reload_weapon = true
 end
 
-local function post_message(skill)
-    get_chatman():call("reqAddChatInfomation",'The skill <COL YEL>' .. skill .. '</COL>\nhas expired.',2289944406)
+local function post_message(skill,type)
+    if type ~= 'cooldown' then
+        str = 'The skill <COL YEL>' .. skill .. '</COL>\nhas expired.'
+    elseif skill == 'Wyvernheart' then
+        str = 'The skill <COL YEL>' .. skill .. '</COL>\nis fully reloaded.'
+    else
+        str = 'The skill <COL YEL>' .. skill .. '</COL>\nis available.'
+    end
+    get_chatman():call("reqAddChatInfomation",str,2289944406)
 end
 
 local function split(inputstr, sep)
@@ -443,11 +504,14 @@ local function round(number, decimals)
 end
 
 local function get_player_weapon()
-    master_player = get_master_player()
+    -- master_player = get_master_player()
     if master_player then
         local weapon_id = master_player:get_field('_playerWeaponType')
         weapon_name = weapon_type_ids[weapon_id]
         weapon = sdk.find_type_definition('snow.player.' .. weapon_name)
+    else
+        weapon_name = nil
+        weapon = nil
     end
 end
 
@@ -474,6 +538,7 @@ local function transform_time(time)
 end
 
 local function get_harvest_t(field)
+    if not get_longshellman() then return 0 end
     local list = get_longshellman():call('getMaseterLongSwordShell010s',master_player:get_field('_PlayerIndex'))
     if list:get_field('mSize') ~= 0 then
         local element = list:call('get_Item',0)
@@ -563,6 +628,7 @@ local function get_twin_vine_t(field)
 end
 
 local function get_cocoon_t(field,name)
+    if not get_hornshellman() then return 0 end
     local shell_fields = {
                     ['Bead of Resonance']='_HornShell003s',
                     ['Sonic Bloom']='_HornShell020s'
@@ -645,20 +711,46 @@ local function pulse(color1,color2,id)
     return ARBGintfromRGBA(math.floor(r),math.floor(g),math.floor(b),a)
 end
 
-local function create_timer(timer,timer_name,timer_count,id,timer_max_len,hide)
+local function create_timer(timer,timer_name,timer_count,id,hide,type)
     if timer == 0 or timer < 0 then
 
         if expired_skill_frame_count[id] and expired_skill_frame_count[id] < max_frame_count then expired_skill_frame_count[id] = expired_skill_frame_count[id] + 1 end
 
-        if expired_skill_frame_count[id] == max_frame_count or not expired_skill_frame_count[id] then
+        if expired_skill_frame_count[id] == max_frame_count or not expired_skill_frame_count[id] or ignore_frame_count[timer_name] then
             if settings.show_notif then
                 if notification[id] then
-                    post_message(timer_name)
+                    post_message(timer_name,type)
                     notification[id] = false
                 end
             else
                 if notification[id] then notification[id] = false end
             end
+
+            if settings.show_miss and type ~= 'cooldown' then
+                timer_font_color = settings.miss_color
+                border_color = settings.miss_color
+                prog_bar_color = settings.miss_color
+
+                if settings.show_miss_on_name then
+                    name_font_color = settings.miss_color
+                else
+                    name_font_color = settings.name_font_color
+                end
+
+                if settings.show_miss_on_border then
+                    border_color = settings.miss_color
+                else
+                    border_color = settings.border_color
+                end
+
+            else
+                timer_font_color = settings.timer_font_color
+                border_color = settings.border_color
+                name_font_color = settings.name_font_color
+                prog_bar_color = settings.prog_bar_color
+            end
+        end
+    elseif type == 'cooldown' and timer > 0 then
 
             if settings.show_miss then
                 timer_font_color = settings.miss_color
@@ -683,7 +775,7 @@ local function create_timer(timer,timer_name,timer_count,id,timer_max_len,hide)
                 name_font_color = settings.name_font_color
                 prog_bar_color = settings.prog_bar_color
             end
-        end
+
     else
         timer_font_color = settings.timer_font_color
         border_color = settings.border_color
@@ -740,17 +832,6 @@ local function create_timer(timer,timer_name,timer_count,id,timer_max_len,hide)
         local text_x = settings.xpos
         local text_y = settings.ypos
         local text = transform_time(timer)
-
-        if settings.align_to_bigger then
-            local text_len = string.len(text)
-            if text_len < timer_max_len then
-                local dif = timer_max_len - text_len
-                dif = string.rep('0',dif)
-                text = dif .. text
-            elseif text_len > timer_max_len then
-                timer_max_len = text_len
-            end
-        end
 
         bg_w,bg_h = timer_font:measure(text)
         bg_x = settings.xpos - background_offset
@@ -873,24 +954,52 @@ sdk.hook(sdk.find_type_definition('snow.player.PlayerReplaceAtkMysetHolder'):get
 
 re.on_frame(
         function()
+            if get_playman() then master_player = get_master_player() end
+
             if get_playman() and not weapon or reload_weapon then
                 get_player_weapon()
                 reload_weapon = false
                 reload_wirebug_skills = true
             end
+
             if get_playman() and not wire_skills or reload_wirebug_skills then
                 get_eq_wireskills()
                 reload_wirebug_skills = false
             end
+
+            if get_questman() then
+                prev_quest_status = quest_status
+                quest_status = get_questman():get_field("_QuestStatus")
+                if prev_quest_status ~= quest_status then
+                    longshellman = nil
+                    bowgunshellman = nil
+                    hornshellman = nil
+                end
+            end
+
             local t = nil
             local ids = {}
             timers = {}
-            timer_max_len = 0
-            if weapon and settings.enabled and ( (get_questman() and get_questman():get_field("_QuestStatus") == 2) or (get_vilman() and get_vilman():call('checkCurrentArea_TrainingArea') )) then
+            if master_player and weapon and settings.enabled and ( quest_status == 2 or (get_vilman() and get_vilman():call('checkCurrentArea_TrainingArea') )) then
+
+                if settings.hide_when_quest_hidden then
+                    local gui_hud = get_guiman():get_field('<refGuiHud>k__BackingField')
+                    if gui_hud then
+                        local gui_state = gui_hud:get_field('_IsPartVisible')
+                        hide_all_timers = not gui_state
+                    else
+                        hide_all_timers = true
+                    end
+                else
+                    hide_all_timers = false
+                end
+
                 if weapon_skill_fields[weapon_name] then
                     for i,ws in ipairs(weapon_skill_fields[weapon_name]) do
                         local skill_name = ws['name']
                         local hide = false
+
+                        if hide_all_timers then hide = true end
 
                         if not settings[skill_name] then
                             notification[i] = false
@@ -899,18 +1008,23 @@ re.on_frame(
                         end
 
                         local skill_field = ws['field']
+                        local field_type = ws['field_type']
                         local skill_type = ws['type']
                         local equipped_val = ws['equipped_val']
 
                         if ws['skill_type'] == 'wirebug' and wire_skills[ skill_type ][ equipped_val ]
-                        or ws['skill_type'] == 'weapon' then
+                        or ws['skill_type'] == 'weapon'
+                        or ws['skill_type'] == 'cooldown' then
 
                             if not expired_skill_frame_count[i] then expired_skill_frame_count[i] = 0 end
 
-                            local timer_field = weapon:get_field(skill_field)
-                            if timer_field then
-                                t = timer_field:get_data(master_player) / 60
-                            else
+                            if field_type == 'weapon' then
+                                local timer_field = weapon:get_field(skill_field)
+                                if timer_field then
+                                    t = timer_field:get_data(master_player) / 60
+                                end
+
+                            elseif field_type == 'shell' then
                                 if weapon_name == 'LongSword' then
                                     t = get_harvest_t(skill_field)
                                 elseif weapon_name == 'HeavyBowgun' then
@@ -919,6 +1033,47 @@ re.on_frame(
                                     t = get_twin_vine_t(skill_field)
                                 elseif weapon_name == 'Horn' then
                                     t = get_cocoon_t(skill_field,skill_name)
+                                end
+                            elseif not field_type then
+                                if weapon_name == 'GunLance' then
+                                    t = weapon:get_method('get_ChargeDragonSlayCannonTime'):call(master_player)
+                                elseif weapon_name == 'LightBowgun' then
+                                    local cd = weapon:get_field('_WyvernBlastReloadTime'):get_data(master_player)
+                                    local pd = master_player:call('get_PlayerData')
+                                    local elapsed = pd:get_field('_WyvernBlastReloadTimer')
+                                    local max_wb = weapon:get_field('_WyvernBlastGaugeMax'):get_data(master_player)
+                                    local cur_wb = pd:get_field('_WyvernBlastGauge')
+
+                                    if cur_wb > prev_wb then
+                                        t = 0
+                                        skill_name = skill_name .. ' ' .. prev_wb + 1
+                                    elseif cur_wb == max_wb then
+                                        t = 0
+                                    else
+                                        t = (cd - elapsed) / 60
+                                        skill_name = skill_name .. ' ' .. cur_wb + 1
+                                    end
+                                    prev_wb = cur_wb
+                                elseif weapon_name == 'HeavyBowgun' then
+                                    local pd = master_player:call('get_PlayerData')
+                                    local special_ammo = weapon:get_field('_SpecialBullet'):get_data(master_player)
+                                    if special_ammo == 1 then
+                                        t = pd:get_field('_HeavyBowgunWyvernSnipeTimer') / 60
+                                        skill_name = 'Wyvernsnipe'
+                                    elseif special_ammo == 50 then
+                                        local cd = 300
+                                        local max_bullet = weapon:get_field('_SpecialBulletMax'):get_data(master_player)
+                                        local cur_bullet = pd:get_field('_HeavyBowgunWyvernMachineGunBullet')
+                                        local elapsed = pd:get_field('_HeavyBowgunWyvernMachineGunTimer')
+
+                                        if max_bullet == cur_bullet then
+                                            t = 0
+                                        else
+                                            t = ((max_bullet - cur_bullet) * cd - (cd - elapsed)) / 60
+                                        end
+
+                                        skill_name = 'Wyvernheart'
+                                    end
                                 end
                             end
 
@@ -969,9 +1124,7 @@ re.on_frame(
 
                             end
 
-                            table.insert(timers,{timer=t,name=skill_name,id=i,hide=hide})
-
-
+                            table.insert(timers,{timer=t,name=skill_name,id=i,hide=hide,type=ws['skill_type']})
 
                             ids[i] = true
 
@@ -1000,14 +1153,9 @@ d2d.register(
     end,
     function()
         if settings.enabled and ( (get_questman() and get_questman():get_field("_QuestStatus") == 2) or (get_vilman() and get_vilman():call('checkCurrentArea_TrainingArea') ) ) then
-            local timer_max_len = 0
             local hide_count = 0
-            local e = 0
             for i,timer in pairs(timers) do
-                local timer_len = string.len(transform_time(timer['timer']))
-                if timer_len > timer_max_len then
-                    timer_max_len = timer_len
-                end
+
                 if timer['hide'] then
                     hide_count = hide_count + 1
                 end
@@ -1016,7 +1164,7 @@ d2d.register(
             for i,timer in pairs(timers) do
                 local timer_count = i-1-hide_count
                 if timer_count < 0 then timer_count = 0 end
-                create_timer(timer['timer'],timer['name'],timer_count,timer['id'],timer_max_len,timer['hide'])
+                create_timer(timer['timer'],timer['name'],timer_count,timer['id'],timer['hide'],timer['type'])
             end
         end
     end
@@ -1024,7 +1172,7 @@ d2d.register(
 
 
 re.on_draw_ui(function()
-    if imgui.tree_node("Wirebug Timers") then
+    if imgui.tree_node("Weapon Timers") then
         if settings.timer_stack == 1 then
             stack_direction_list = {'Up','Down'}
         elseif settings.timer_stack == 2 then
@@ -1038,6 +1186,7 @@ re.on_draw_ui(function()
         _,settings.show_miss = imgui.checkbox('Show Expired Color', settings.show_miss)
         _,settings.show_notif = imgui.checkbox('Show Chat Notification', settings.show_notif)
         _,settings.hide_when_expired = imgui.checkbox('Hide When Expired', settings.hide_when_expired)
+        _,settings.hide_when_quest_hidden = imgui.checkbox('Hide When Quest Hud is Hidden', settings.hide_when_quest_hidden)
         _,settings.pulse = imgui.checkbox('Pulse when near expiration', settings.pulse)
         changed,settings.only_active = imgui.checkbox('Only show bars for skills from active scroll', settings.only_active)
         _,settings.xpos = imgui.slider_int('X Pos', settings.xpos, 0, x)
@@ -1054,15 +1203,18 @@ re.on_draw_ui(function()
             end
             if imgui.tree_node("Long Sword") then
                 _,settings['Harvest Moon'] = imgui.checkbox('Harvest Moon', settings['Harvest Moon'])
+                _,settings['Spirit Gauge Lv'] = imgui.checkbox('Spirit Gauge Lv', settings['Spirit Gauge Lv'])
                 imgui.tree_pop()
             end
             if imgui.tree_node("Light Bowgun") then
                 _,settings['Fanning Maneuver'] = imgui.checkbox('Fanning Maneuver', settings['Fanning Maneuver'])
+                _,settings['Wyvernblast'] = imgui.checkbox('Wyvernblast', settings['Wyvernblast'])
                 imgui.tree_pop()
             end
             if imgui.tree_node("Heavy Bowgun") then
                 _,settings['Setting Sun'] = imgui.checkbox('Setting Sun', settings['Setting Sun'])
                 _,settings['Rising Moon'] = imgui.checkbox('Rising Moon', settings['Rising Moon'])
+                _,settings['Special Ammo'] = imgui.checkbox('Special Ammo', settings['Special Ammo'])
                 imgui.tree_pop()
             end
             if imgui.tree_node("Hammer") then
@@ -1071,6 +1223,7 @@ re.on_draw_ui(function()
             end
             if imgui.tree_node("Gun Lance") then
                 _,settings['Ground Splitter'] = imgui.checkbox('Ground Splitter', settings['Ground Splitter'])
+                _,settings["Wyvern's Fire"] = imgui.checkbox("Wyvern's Fire", settings["Wyvern's Fire"])
                 imgui.tree_pop()
             end
             if imgui.tree_node("Lance") then
@@ -1167,7 +1320,7 @@ re.on_draw_ui(function()
         if imgui.tree_node("Pulse Options") then
             _,settings.pulse_name = imgui.checkbox('Pulse Name', settings.pulse_name)
             _,settings.border_pulse = imgui.checkbox('Pulse Border', settings.border_pulse)
-            _,settings.pulse_below = imgui.slider_int('Pulse Below x', settings.pulse_below, 1, 60)
+            _,settings.pulse_below = imgui.slider_int('Pulse Threshold', settings.pulse_below, 1, 60)
             _,settings.pulse_interval = imgui.slider_int('Pulse Interval', settings.pulse_interval, 2, 500)
             if imgui.tree_node("Pulse Color") then
                 _,settings.pulse_color = imgui.color_picker_argb('',settings.pulse_color)
